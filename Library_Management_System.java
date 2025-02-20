@@ -84,47 +84,48 @@ class Library{
             System.out.println("Book with ID " + bookId + " not found.");
         }
     }
-    public void borrowBook(User user, String bookName) {
-        if (book.containsKey(bookName)) {
-            Books temp = book.get(bookName);
-            if (temp.getQuantity() <= 0) {
-                System.out.println(bookName + " Book is not available right now");
+    public void borrowBook(User user, String bookTitle) {
+        for (Books b : book.values()) { // Iterate over the book collection
+            if (b.getBookTitle().equalsIgnoreCase(bookTitle)) { 
+                if (b.getQuantity() <= 0) {
+                    System.out.println(bookTitle + " is not available right now.");
+                    return;
+                }
+                b.borrowedbook();
+                borrowedbook.put(user, b);
+                allocatedDays.put(user, 10);
+                System.out.println(bookTitle + " has been allocated to you for 10 days.");
                 return;
             }
-            temp.borrowedbook();
-            borrowedbook.put(user, temp);
-            allocatedDays.put(user, 10);
-            System.out.println(bookName + " is allocated for you for the next 10 days. Do not forget to return the book by the due date or else you should pay a fine for it.");
-        } else {
-            System.out.println("No Book named " + bookName + " is present in the Library");
         }
+        System.out.println("No book titled '" + bookTitle + "' found in the library.");
     }
+
     public Books getBookById(String bookId) {
         return book.getOrDefault(bookId, null);
     }
     public void returnBook(User user, String bookTitle, int days) {
-        for (Map.Entry<User, Books> entry : borrowedbook.entrySet()) {
-            if (entry.getKey().equals(user)) {
+        Iterator<Map.Entry<User, Books>> iterator = borrowedbook.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<User, Books> entry = iterator.next();
+            if (entry.getKey().equals(user) && entry.getValue().getBookTitle().equals(bookTitle)) {
                 Books book = entry.getValue();
-                if (book.getBookTitle().equals(bookTitle)) {
-                    // Update the quantity of the returned book
-                    book.setQuantity(book.getQuantity() + 1);
-                    borrowedbook.remove(user); // Remove the book from borrowed list
+                book.setQuantity(book.getQuantity() + 1);
+                iterator.remove(); // Remove the book safely
     
-                    // Calculate fine if the book is returned late
-                    int allocatedDays = this.allocatedDays.getOrDefault(user, 0);
-                    if (days > allocatedDays) {
-                        int fine = (days - allocatedDays) * 10; // Assuming fine is $10 per day
-                        System.out.println("You returned the book " + (days - allocatedDays) + " days late. Fine: $" + fine);
-                    } else {
-                        System.out.println("Book returned on time. Thank you!");
-                    }
-                    return;
+                int allocatedDays = this.allocatedDays.getOrDefault(user, 0);
+                if (days > allocatedDays) {
+                    int fine = (days - allocatedDays) * 10;
+                    System.out.println("Returned late. Fine: $" + fine);
+                } else {
+                    System.out.println("Book returned on time. Thank you!");
                 }
+                return;
             }
         }
-        System.out.println("You have not borrowed the book: " + bookTitle);
+        System.out.println("You haven't borrowed the book: " + bookTitle);
     }
+
     public int calculateFine(User user, int days) {
         int allocatedDays = this.allocatedDays.getOrDefault(user, 0); // Avoids NullPointerException
         if (days > allocatedDays) {
@@ -210,6 +211,7 @@ public class Library_Management_System{
         Library_Management_System system=new Library_Management_System();
         Scanner sc=new Scanner(System.in);
         while(!flag){
+            clearScreen();
             System.out.println();
             System.out.println("---- Welcome to the Charan Library ----- ");
             System.out.println("Please select one of the options to proceed");
@@ -217,6 +219,7 @@ public class Library_Management_System{
             String inp=sc.nextLine();
             if(inp.equals("Login")){
                 system.userLogin();
+                pause(sc);
                 /*Options:
                  * Search Book
                  * Borrow Book
@@ -238,15 +241,17 @@ public class Library_Management_System{
                     case 2: 
                         system.adminRegister();
                         break;
-
                 }
+                pause(sc);
             }
             else if(inp.equals("Bye")){
                 System.out.println("Thank you for using the application ");
                 flag=true;
+                pause(sc);
             }
             else if(inp.equals("Admin")){
                 system.adminLogin();
+                pause(sc);
                 /* Options:
                  * Add Book
                  * Remove Book
@@ -258,6 +263,7 @@ public class Library_Management_System{
             }
             else{
                 System.out.println("Invalid Input, exit the code and try again");
+                pause(sc);
             }
         }
         sc.close();
@@ -431,7 +437,22 @@ public class Library_Management_System{
             }
 
     }
-    
+    static void clearScreen() {
+        try {
+            if (System.getProperty("os.name").contains("Windows")) {
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            } else {
+                System.out.print("\033[H\033[2J");
+                System.out.flush();
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+    static void pause(Scanner sc) {
+        System.out.println("Press Enter to continue...");
+        sc.nextLine();
+    }
     
     
     public void adminHomePage() {
@@ -516,6 +537,7 @@ public class Library_Management_System{
         }
         return null;
     }
+
     
     public void addBook(){
         sc.nextLine();
